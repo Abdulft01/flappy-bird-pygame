@@ -3,6 +3,20 @@ import os
 import sys
 import random
 
+HIGHSCORE_FILE = "highscore.txt"
+
+def load_high_score():
+    if not os.path.exists(HIGHSCORE_FILE):
+        return 0
+    with open(HIGHSCORE_FILE, "r") as file:
+        return int(file.read().strip() or 0)
+    
+def save_high_Score(score):
+    with open(HIGHSCORE_FILE, "w") as file:
+        file.write(str(score))
+
+high_score = load_high_score()
+
 # added resource path as i want to convert in to .exe
 def resource_path(relative_path):
     try:
@@ -145,6 +159,12 @@ while running:
     if not game_active and not hit_played:
         hit_sound.play()
         pygame.mixer.music.stop()
+
+        # update high score
+        if score > high_score:
+            high_score = score
+            save_high_Score(high_score)
+
         hit_played = True
     
     screen.fill((135, 206, 235)) # sky blue background color 
@@ -165,6 +185,10 @@ while running:
     # score display
     score_text = score_font.render(f"Score: {score}", True, (0, 0, 0))
     screen.blit(score_text, (10, 10))
+
+    # highscore display
+    high_score_text = score_font.render(f"High Score: {high_score}", True, (0, 0, 0))
+    screen.blit(high_score_text, (10, 40))
 
 
     if not game_active:
