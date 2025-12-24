@@ -1,6 +1,15 @@
 import pygame
+import os
 import sys
 import random
+
+# added resource path as i want to convert in to .exe
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 # init pygame
 pygame.init()
@@ -15,6 +24,21 @@ clock = pygame.time.Clock()
 
 font = pygame.font.SysFont(None, 48)
 score_font = pygame.font.SysFont(None, 30)
+
+# loading the bird image from the assets folder
+bird_img = pygame.image.load(resource_path("assets/bird.png")).convert_alpha()
+bird_img = pygame.transform.scale(bird_img, (40, 30))
+
+# loading the pipe image from the assets folder
+pipe_img = pygame.image.load(resource_path("assets/pipe.png")).convert_alpha()
+
+# loading the sound effects like jump, hit and background music of mp3 formats
+jump_sound = pygame.mixer.Sound(resource_path("assets/jump.mp3"))
+hit_sound = pygame.mixer.Sound(resource_path("assets/hit.mp3"))
+
+pygame.mixer.music.load(resource_path("assets/bg_music.mp3"))
+pygame.mixer.music.set_volume(0.4)
+pygame.mixer.music.play(-1)
 
 # bird
 bird_x = 80
@@ -39,6 +63,8 @@ game_active = True
 # score
 score = 0
 
+hit_played = False
+
 # fun to create pipes
 def create_pipe():
     height = random.randint(150, 450)
@@ -49,13 +75,15 @@ def create_pipe():
 
 # fun to reset the game
 def reset_game():
-    global bird_y, bird_velocity, pipes, score, pipe_speed, game_active
+    global bird_y, bird_velocity, pipes, score, pipe_speed, game_active, hit_played
     bird_y = 300
     bird_velocity = 0
     pipes = []
     score = 0
     pipe_speed = 3
     game_active = True
+    hit_played = False
+    pygame.mixer.music.play(-1)
 
 # game loop
 running = True
@@ -68,6 +96,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 bird_velocity = jump_force
+                jump_sound.play()
 
             if event.key == pygame.K_r and not game_active:
                 reset_game()
@@ -112,15 +141,26 @@ while running:
                 if score % 5 == 0:
                     pipe_speed += 0.5
 
+    # gamer over sound
+    if not game_active and not hit_played:
+        hit_sound.play()
+        pygame.mixer.music.stop()
+        hit_played = True
+    
     screen.fill((135, 206, 235)) # sky blue background color 
 
-    # drawing pipe
+    # pipe image
     for pipe in pipes:
-        pygame.draw.rect(screen, (0, 200, 0), pipe["top"])
-        pygame.draw.rect(screen, (0, 200, 0), pipe["bottom"])
+        top_img = pygame.transform.scale(pipe_img, (pipe["top"].width, pipe["top"].height))
+        top_img = pygame.transform.flip(top_img, False, True)
+        screen.blit(top_img, pipe["top"])
 
-    # drawing bird
-    pygame.draw.circle(screen, (255, 255, 0), (bird_x, int(bird_y)), bird_radius)
+        bottom_img = pygame.transform.scale(pipe_img, (pipe["bottom"].width, pipe["bottom"].height))
+        screen.blit(bottom_img, pipe["bottom"])
+
+    # bird image
+    bird_rect = bird_img.get_rect(center = (bird_x, bird_y))
+    screen.blit(bird_img, bird_rect)
 
     # score display
     score_text = score_font.render(f"Score: {score}", True, (0, 0, 0))
