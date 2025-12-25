@@ -54,14 +54,6 @@ pygame.mixer.music.load(resource_path("assets/bg_music.mp3"))
 pygame.mixer.music.set_volume(0.4)
 pygame.mixer.music.play(-1)
 
-# bird
-bird_x = 80
-bird_y = 300
-bird_radius = 15
-
-gravity = 0.5
-bird_velocity = 0
-jump_force = -8
 
 # pipes
 pipe_width = 60
@@ -79,6 +71,38 @@ score = 0
 
 hit_played = False
 
+
+# class bird
+class Bird:
+    def __init__(self, image):
+        self.image = image
+        self.x = 80
+        self.y = 300
+        self.velocity = 0
+        self.gravity = 0.5
+        self.jump_force = -8
+
+    def jump(self):
+        self.velocity = self.jump_force
+
+
+    def update(self):
+        self.velocity += self.gravity
+        self.y += self.velocity
+
+        # ceiling collision
+        if self.y <= 0:
+            self.y = 0
+            self.velocity = 0
+
+    def get_rect(self):
+        return self.image.get_rect(center = (self.x, self.y))
+    
+    def draw(self, screen):
+        screen.blit(self.image, self.get_rect())
+
+bird = Bird(bird_img)
+
 # fun to create pipes
 def create_pipe():
     height = random.randint(150, 450)
@@ -89,9 +113,9 @@ def create_pipe():
 
 # fun to reset the game
 def reset_game():
-    global bird_y, bird_velocity, pipes, score, pipe_speed, game_active, hit_played
-    bird_y = 300
-    bird_velocity = 0
+    global pipes, score, pipe_speed, game_active, hit_played
+    bird.y = 300
+    bird.velocity = 0
     pipes = []
     score = 0
     pipe_speed = 3
@@ -109,7 +133,7 @@ while running:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                bird_velocity = jump_force
+                Bird.jump(bird)
                 jump_sound.play()
 
             if event.key == pygame.K_r and not game_active:
@@ -120,16 +144,10 @@ while running:
 
     # game logic
     if game_active:
-        bird_velocity += gravity
-        bird_y += bird_velocity
-
-        # ceiling collision
-        if bird_y - bird_radius <=0:
-            bird_y = bird_radius
-            bird_velocity = 0
+        bird.update()
 
         # ground collision
-        if bird_y + bird_radius >= HEIGHT:
+        if bird.y + bird.image.get_height() >= HEIGHT:
             game_active = False
 
         # moving the pipes
@@ -140,7 +158,7 @@ while running:
         pipes = [pipe for pipe in pipes if pipe["top"].right > 0]
 
 
-        bird_rect = pygame.Rect(bird_x - bird_radius, bird_y - bird_radius, bird_radius * 2, bird_radius *2)
+        bird_rect = bird.get_rect()
 
         for pipe in pipes:
             # collision
@@ -148,7 +166,7 @@ while running:
                 game_active = False
 
             # scoring
-            if pipe["top"].right < bird_x and not pipe["passed"]:
+            if pipe["top"].right < bird.x and not pipe["passed"]:
                 pipe["passed"]= True
                 score += 1
 
@@ -179,8 +197,7 @@ while running:
         screen.blit(bottom_img, pipe["bottom"])
 
     # bird image
-    bird_rect = bird_img.get_rect(center = (bird_x, bird_y))
-    screen.blit(bird_img, bird_rect)
+    bird.draw(screen)
 
     # score display
     score_text = score_font.render(f"Score: {score}", True, (0, 0, 0))
