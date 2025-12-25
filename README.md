@@ -1,38 +1,49 @@
-# Flappy Bird Pygame
+# Flappy Bird – Pygame
 
-A Flappy Bird–style 2D game built **from scratch** using Python and Pygame.
-This project was developed incrementally in multiple phases to understand
-game loops, physics, collision detection, and asset management.
+A Flappy Bird–style 2D game built **from scratch** using Python and Pygame.  
+The project was developed incrementally to understand **game loops, physics, collision detection, object-oriented design and asset management**.
 
-“This project is a non-commercial educational clone inspired by Flappy Bird.”
+> This is a **non-commercial, educational clone** inspired by Flappy Bird.
 
 ---
 
 ## 🎮 Features
 - Physics-based bird movement (gravity & jump)
 - Procedurally generated pipes
-- Collision detection & game states
+- Collision detection and game state handling
 - Score tracking with increasing difficulty
-- Sound effects & background music
+- Persistent high score stored locally
+- Sound effects and background music
+- Clean **OOP architecture** (Bird, Pipe, Game classes)
 - EXE-ready build using PyInstaller
 
 ---
 
+## 🧠 Project Structure
+- `Bird` class → handles player movement and physics  
+- `Pipe` class → handles obstacle generation, movement, and collisions  
+- `Game` class → manages game loop, state, input, rendering and scoring  
+
+The project was refactored step by step from a procedural script into a structured OOP design.
+
+---
+
 ## 🕹 Controls
-- SPACE → Jump
-- R → Restart after Game Over
-- Close window → Exit game
+- **SPACE** → Jump  
+- **R** → Restart after Game Over  
+- **Close window** → Exit game  
 
 ---
 
 ## 🛠 Tech Stack
-- Python
-- Pygame
-- PyInstaller (for Windows executable)
+- **Python**
+- **Pygame**
+- **PyInstaller** (for Windows executable)
 
 ---
 
-## How to Run (Source Code)
+## ▶ How to Run (Source Code)
+
 ```bash
 pip install pygame
 python main.py
