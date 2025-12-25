@@ -11,7 +11,7 @@ def load_high_score():
     with open(HIGHSCORE_FILE, "r") as file:
         return int(file.read().strip() or 0)
     
-def save_high_Score(score):
+def save_high_score(score):
     with open(HIGHSCORE_FILE, "w") as file:
         file.write(str(score))
 
@@ -27,6 +27,8 @@ def resource_path(relative_path):
 
 # init pygame
 pygame.init()
+
+pygame.mixer.init()
 
 WIDTH = 400
 HEIGHT = 600
@@ -55,21 +57,13 @@ pygame.mixer.music.set_volume(0.4)
 pygame.mixer.music.play(-1)
 
 
-# pipes
-pipe_width = 60
-pipe_gap = 150
-pipe_speed = 3
-pipes = []
-
-SPWANPIPE = pygame.USEREVENT
-pygame.time.set_timer(SPWANPIPE, 1500) # pipe spawn every 1.5 seconds that helps bird to adjust to pass the next pipe
-
 # game state
 game_active = True
+hit_played = False
+
 # score
 score = 0
 
-hit_played = False
 
 
 # class bird
@@ -101,15 +95,60 @@ class Bird:
     def draw(self, screen):
         screen.blit(self.image, self.get_rect())
 
-bird = Bird(bird_img)
+# class pipe
 
-# fun to create pipes
-def create_pipe():
-    height = random.randint(150, 450)
-    top_pipe = pygame.Rect(WIDTH, 0, pipe_width, height - pipe_gap // 2)
-    bottom_pipe = pygame.Rect(WIDTH, height + pipe_gap // 2, pipe_width, HEIGHT - (height + pipe_gap // 2))
+class Pipe:
+    def __init__(self, image, x, gap):
+        self.image = image
+        self.width = 60
+        self.gap = gap
+        self.x = x
+        self.passed = False
 
-    return {"top": top_pipe, "bottom": bottom_pipe, "passed": False}
+        height = random.randint(150, 450)
+
+        self.top_rect = pygame.Rect(
+            self.x,
+            0,
+            self.width,
+            height - self.gap // 2
+        )
+
+        self.bottom_rect = pygame.Rect(
+            self.x,
+            height + self.gap // 2,
+            self.width,
+            HEIGHT - ( height + self.gap // 2)
+        )
+
+    def update(self, speed):
+        self.top_rect.x -= speed
+        self.bottom_rect.x -= speed
+
+    def draw(self, screen):
+        top_img = pygame.transform.scale(self.image, (self.top_rect.width, self.top_rect.height))
+        top_img = pygame.transform.flip(top_img, False, True)
+        screen.blit(top_img, self.top_rect)
+
+        bottom_img = pygame.transform.scale(self.image, (self.bottom_rect.width, self.bottom_rect.height))
+        screen.blit(bottom_img, self.bottom_rect)
+
+    def collides_with(self, bird_rect):
+        return bird_rect.colliderect(self.top_rect) or bird_rect.colliderect(self.bottom_rect)
+        
+    def is_off_screen(self):
+        return self.top_rect.right < 0
+
+
+bird = Bird(bird_img) 
+pipes = []
+
+pipe_gap = 150
+pipe_speed = 3
+
+SPAWNPIPE = pygame.USEREVENT
+pygame.time.set_timer(SPAWNPIPE, 1500)
+
 
 # fun to reset the game
 def reset_game():
@@ -132,15 +171,15 @@ while running:
             running = False
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                Bird.jump(bird)
+            if event.key == pygame.K_SPACE and game_active:
+                bird.jump()
                 jump_sound.play()
 
             if event.key == pygame.K_r and not game_active:
                 reset_game()
 
-        if event.type == SPWANPIPE and game_active:
-            pipes.append(create_pipe())
+        if event.type == SPAWNPIPE and game_active:
+            pipes.append(Pipe(pipe_img, WIDTH, pipe_gap))
 
     # game logic
     if game_active:
@@ -152,26 +191,25 @@ while running:
 
         # moving the pipes
         for pipe in pipes:
-            pipe["top"].x -= pipe_speed
-            pipe["bottom"].x -= pipe_speed
+            pipe.update(pipe_speed)
 
-        pipes = [pipe for pipe in pipes if pipe["top"].right > 0]
+        pipes = [pipe for pipe in pipes if not pipe.is_off_screen()]
 
 
         bird_rect = bird.get_rect()
 
         for pipe in pipes:
             # collision
-            if bird_rect.colliderect(pipe["top"]) or bird_rect.colliderect(pipe["bottom"]):
+            if pipe.collides_with(bird_rect):
                 game_active = False
 
             # scoring
-            if pipe["top"].right < bird.x and not pipe["passed"]:
-                pipe["passed"]= True
+            if pipe.top_rect.right < bird.x and not pipe.passed:
+                pipe.passed= True
                 score += 1
 
                 if score % 5 == 0:
-                    pipe_speed += 0.5
+                    pipe_speed += 0.3
 
     # gamer over sound
     if not game_active and not hit_played:
@@ -181,7 +219,7 @@ while running:
         # update high score
         if score > high_score:
             high_score = score
-            save_high_Score(high_score)
+            save_high_score(high_score)
 
         hit_played = True
     
@@ -189,12 +227,7 @@ while running:
 
     # pipe image
     for pipe in pipes:
-        top_img = pygame.transform.scale(pipe_img, (pipe["top"].width, pipe["top"].height))
-        top_img = pygame.transform.flip(top_img, False, True)
-        screen.blit(top_img, pipe["top"])
-
-        bottom_img = pygame.transform.scale(pipe_img, (pipe["bottom"].width, pipe["bottom"].height))
-        screen.blit(bottom_img, pipe["bottom"])
+        pipe.draw(screen)
 
     # bird image
     bird.draw(screen)
